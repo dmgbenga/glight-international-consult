@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" fill="none">
+  <g stroke="#62a0d2" stroke-width="3" opacity=".5">
+    <path d="M-20 300h260l90 90h170l70-70h210l80 80h200l95-95h190l85 85h220"/>
+    <path d="M-35 560h180l85-85h175l110 110h170l90-90h190l80 80h200l105-105h230"/>
+    <path d="M410 0v300l90 90v165l-110 110v235M1185 0v305l-95 95v165l80 80v255"/>
+  </g>
+  <g stroke="#f39432" stroke-width="3" opacity=".7">
+    <path d="M170 100h110v110h-110zM1320 620h120v120h-120zM700 80h140v140H700z"/>
+    <path d="M240 155h40m-20-20v40M1370 680h40m-20-20v40M750 150h40m-20-20v40"/>
+    <path d="m980 500 45-78 90 0 45 78-45 78h-90zM300 650l40-70h80l40 70-40 70h-80z"/>
+  </g>
+  <g fill="#fff" opacity=".5">
+    <circle cx="240" cy="300" r="6"/><circle cx="570" cy="320" r="6"/><circle cx="860" cy="400" r="6"/>
+    <circle cx="1195" cy="305" r="6"/><circle cx="1450" cy="390" r="6"/><circle cx="145" cy="560" r="6"/>
+    <circle cx="685" cy="585" r="6"/><circle cx="915" cy="565" r="6"/><circle cx="1265" cy="570" r="6"/>
+  </g>
+</svg>
