@@ -9,7 +9,7 @@ Website for **Glight International Consult Limited**, branded **Glight Tech Ment
 
 ## Project architecture
 
-The public website is a dependency-free, multi-page HTML/CSS/JavaScript site. Shared navigation, footer, announcements and form interactions live in `assets/js/script.js`; page content and SEO metadata live in the root HTML pages. Images, including Glight's supplied logo, are local to `assets/images`.
+The public website is a dependency-free, multi-page HTML/CSS/JavaScript site. Shared navigation, footer, announcements and form interactions live in `assets/js/script.js`; page content and SEO metadata live in the root HTML pages. Images, including Glight's supplied logo and learning photos, are local to `assets/images`; supplied videos are local to `assets/videos`.
 
 Vercel serves the static pages and Node.js serverless functions in `api/`. The functions use Supabase Auth and PostgREST over server-side `fetch`; no database or auth secret is included in browser code. `supabase/schema.sql` creates the registration tables, access controls and rate-limit function. There is no frontend framework, package installation or build step.
 
@@ -33,7 +33,7 @@ Testimonials are deliberately not fabricated. The homepage identifies that appro
 
 ## Student registration and privacy
 
-The registration form is for a parent or legal guardian. It collects the guardian's name and contact details, student name, age, class, programme interest and preferred learning mode. A server-side validation check enforces age 4–18, a listed programme, physical/online delivery and recorded guardian consent. The API returns a unique `GL-YYYY-...` reference and does not return the student's submitted information.
+The registration form is for a parent or legal guardian. It collects the guardian's name and contact details, student name, age, class, programme interest and preferred learning mode. A server-side validation check enforces age 3–18, a listed programme, physical/online delivery and recorded guardian consent. Undergraduates and graduates seeking specialist IT skills can contact Glight directly. The API returns a unique `GL-YYYY-...` reference and does not return the student's submitted information.
 
 Student data is stored in Supabase and is not readable by anonymous or authenticated browser clients. The server-only service role key is used by the Vercel functions. Admin sign-in uses Supabase Auth; a user's `app_metadata.role` must be set to `admin`. Admin session cookies are `HttpOnly`, `SameSite=Strict`, and `Secure` in production.
 
@@ -42,7 +42,7 @@ Registration requests are rate limited to five per IP digest per 15-minute windo
 ## Supabase setup
 
 1. Create a Supabase project and choose its data-hosting region based on Glight's privacy and operational requirements.
-2. Open the Supabase SQL Editor and run `supabase/schema.sql`.
+2. Open the Supabase SQL Editor and run `supabase/schema.sql`. Rerun the updated schema on existing projects to apply the learner age range of 3–18.
 3. Create an administrator in Supabase Authentication. Give the account `app_metadata` containing `"role": "admin"` (not user-editable `user_metadata`). For example, after replacing the email with the chosen administrator's address, run this in the SQL Editor:
 
    ```sql

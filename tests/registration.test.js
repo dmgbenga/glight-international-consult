@@ -59,10 +59,11 @@ function invoke(handler, request) {
   });
 }
 
-test('validates guardian consent, age range, delivery mode, and listed programme', () => {
+test('validates guardian consent, ages 3–18, delivery mode, and listed programme', () => {
   assert.equal(validateRegistration(validPayload).valid, true);
   assert.equal(validateRegistration({ ...validPayload, guardianConsent: false }).fields.guardianConsent !== undefined, true);
-  assert.equal(validateRegistration({ ...validPayload, age: 3 }).fields.age !== undefined, true);
+  assert.equal(validateRegistration({ ...validPayload, age: 3 }).valid, true);
+  assert.equal(validateRegistration({ ...validPayload, age: 2 }).fields.age !== undefined, true);
   assert.equal(validateRegistration({ ...validPayload, age: 19 }).fields.age !== undefined, true);
   assert.equal(validateRegistration({ ...validPayload, learningMode: 'hybrid' }).fields.learningMode !== undefined, true);
   assert.equal(validateRegistration({ ...validPayload, programme: 'Unlisted programme' }).fields.programme !== undefined, true);

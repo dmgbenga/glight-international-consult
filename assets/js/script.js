@@ -31,7 +31,7 @@ function renderLayout() {
         <div class="container header-inner">
           <a class="brand" href="index.html" aria-label="Glight International Consult Limited home">
             <img class="brand-logo" src="assets/images/glight-logo.png" width="64" height="64" alt="Glight International Consult Limited logo">
-            <span class="brand-copy"><strong>Glight International Consult Limited</strong><small>Glight Tech Mentors</small></span>
+            <span class="brand-copy"><strong>Glight International Consult Limited</strong></span>
           </a>
           <button class="menu-toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="site-navigation" data-menu-toggle><span class="menu-lines" aria-hidden="true"></span></button>
           <nav class="site-nav" id="site-navigation" aria-label="Main navigation">
@@ -83,11 +83,19 @@ function renderLayout() {
   if (footer) {
     footer.innerHTML = `
       <footer class="site-footer">
+        <div class="container footer-subscribe">
+          <div>
+            <p class="eyebrow">Stay connected</p>
+            <h2>Get Glight updates and opportunities.</h2>
+            <p>Subscribe via WhatsApp for programme news, events and ways to get involved.</p>
+          </div>
+          <a class="button button-gold" href="https://wa.me/2347067426404?text=Hello%20Glight%2C%20I%20would%20like%20to%20subscribe%20to%20Glight%20updates%20and%20opportunities." target="_blank" rel="noopener noreferrer">Subscribe on WhatsApp <span aria-hidden="true">&nearr;</span></a>
+        </div>
         <div class="container footer-main">
           <div class="footer-brand">
             <a class="brand" href="index.html" aria-label="Glight International Consult Limited home">
               <img class="brand-logo" src="assets/images/glight-logo.png" width="64" height="64" alt="Glight International Consult Limited logo">
-              <span class="brand-copy"><strong>Glight International Consult Limited</strong><small>Glight Tech Mentors</small></span>
+              <span class="brand-copy"><strong>Glight International Consult Limited</strong></span>
             </a>
             <p>Education. Innovation. Technology.<br>Tech Mentor Your Child for the Future.</p>
           </div>
@@ -191,6 +199,42 @@ function setupWallpaperCarousel() {
     toggle.hidden = false;
     updateToggle();
     start();
+  });
+}
+
+function setupPhotoCarousel() {
+  document.querySelectorAll('[data-photo-carousel]').forEach((carousel) => {
+    const track = carousel.querySelector('[data-photo-track]');
+    const slides = Array.from(carousel.querySelectorAll('[data-photo-slide]'));
+    const previous = carousel.querySelector('[data-photo-prev]');
+    const next = carousel.querySelector('[data-photo-next]');
+    const status = carousel.querySelector('[data-photo-status]');
+    const controls = carousel.querySelector('.photo-carousel-controls');
+    if (!track || slides.length === 0 || !previous || !next || !status || !controls) return;
+
+    const getStep = () => {
+      const gap = Number.parseFloat(window.getComputedStyle(track).columnGap) || 0;
+      return slides[0].getBoundingClientRect().width + gap;
+    };
+    const updateControls = () => {
+      const index = Math.min(slides.length - 1, Math.max(0, Math.round(track.scrollLeft / getStep())));
+      status.textContent = `Slide ${index + 1} of ${slides.length}`;
+      previous.disabled = track.scrollLeft <= 1;
+      next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
+    };
+
+    const scrollTrack = (direction) => {
+      const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+      track.scrollBy({ left: direction * getStep(), behavior });
+    };
+
+    previous.addEventListener('click', () => scrollTrack(-1));
+    next.addEventListener('click', () => scrollTrack(1));
+    track.addEventListener('scroll', updateControls, { passive: true });
+    window.addEventListener('resize', updateControls);
+    slides.forEach((slide, index) => slide.setAttribute('aria-label', `Slide ${index + 1} of ${slides.length}`));
+    controls.hidden = false;
+    updateControls();
   });
 }
 
@@ -587,6 +631,7 @@ function setupAdminDashboard() {
 
 renderLayout();
 setupWallpaperCarousel();
+setupPhotoCarousel();
 renderAnnouncements();
 setupRegistrationForm();
 setupAdminDashboard();

@@ -7,7 +7,7 @@ create table if not exists public.student_registrations (
   parent_email text not null,
   parent_phone text not null,
   student_name text not null,
-  age integer not null check (age between 4 and 18),
+  age integer not null,
   class_name text not null,
   programme text not null check (programme in (
     'Coding and Programming',
@@ -31,6 +31,11 @@ create table if not exists public.student_registrations (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.student_registrations
+  drop constraint if exists student_registrations_age_check;
+alter table public.student_registrations
+  add constraint student_registrations_age_check check (age between 3 and 18);
 
 create index if not exists student_registrations_created_at_idx
   on public.student_registrations (created_at desc);
