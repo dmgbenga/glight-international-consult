@@ -8,6 +8,8 @@ const {
   logApiError
 } = require('../lib/http');
 const { supabaseRequest, readResponseJson } = require('../lib/supabase');
+const { sendRegistrationNotifications } = require('../lib/email');
+const { appendRegistrationToGoogleSheet } = require('../lib/google-sheets');
 const {
   validateRegistration,
   createRegistrationReference,
@@ -52,13 +54,15 @@ async function saveRegistration(data) {
         parent_email: data.parentEmail,
         parent_phone: data.parentPhone,
         student_name: data.studentName,
-        age: data.age,
-        class_name: data.className,
+        student_age: data.age,
+        student_class: data.className,
+        additional_information: data.additionalInformation,
         programme: data.programme,
-        learning_mode: data.learningMode,
-        guardian_consent: true,
+        learning_mode: data.learningMode === 'physical' ? 'Physical' : 'Online',
+        parental_consent: true,
         guardian_consent_name: data.parentName,
-        guardian_consent_version: 'guardian-registration-v1'
+        guardian_consent_version: 'guardian-registration-v1',
+        application_status: 'Pending'
       }
     });
 
@@ -97,7 +101,25 @@ module.exports = async function register(req, res) {
     if (!permitted) return sendJson(res, 429, { error: 'Too many registration attempts. Please wait and try again.' });
 
     const reference = await saveRegistration(validation.data);
-    return sendJson(res, 201, { reference });
+    const emailStatusPromise = sendRegistrationNotifications(reference, validation.data)
+      .then((emailResult) => {
+        emailResult.failures.forEach(({ target, error }) => {
+          logApiError(`registration-email-${target}`, error);
+        });
+        return emailResult.status;
+      })
+      .catch((error) => {
+        logApiError('registration-email', error);
+        return 'failed';
+      });
+    const sheetStatusPromise = appendRegistrationToGoogleSheet(reference, validation.data)
+      .then((result) => result.status)
+      .catch((error) => {
+        logApiError('registration-google-sheets', error);
+        return 'failed';
+      });
+    const [emailStatus, sheetStatus] = await Promise.all([emailStatusPromise, sheetStatusPromise]);
+    return sendJson(res, 201, { reference, emailStatus, sheetStatus });
   } catch (error) {
     if (error instanceof RequestError) return sendJson(res, error.status, { error: error.message });
     logApiError('registration', error);

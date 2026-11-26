@@ -19,9 +19,24 @@
   </form>
   <section class="admin-panel" data-admin-panel hidden>
     <div class="admin-toolbar"><div><p class="eyebrow">Authenticated administrator</p><h2>Student registrations</h2><p data-admin-identity></p></div><button class="button button-outline-dark" type="button" data-admin-logout>Sign out</button></div>
-    <div class="admin-filters"><label class="field">Filter by status<select data-admin-filter><option value="">All statuses</option><option value="pending">Pending</option><option value="contacted">Contacted</option><option value="registered">Registered</option><option value="closed">Closed</option></select></label><button class="button button-navy" type="button" data-admin-refresh>Refresh list</button></div>
+    <div class="admin-summary" aria-label="Registration summary">
+      <article class="admin-summary-card"><span>Total registrations</span><strong data-admin-total>—</strong></article>
+      <article class="admin-summary-card"><span>Pending applications</span><strong data-admin-pending>—</strong></article>
+    </div>
+    <form class="admin-filters" data-admin-filter-form>
+      <label class="field">Search student or parent<input type="search" data-admin-search maxlength="80" placeholder="Enter a name"></label>
+      <label class="field">Programme<select data-admin-programme><option value="">All programmes</option><option>Coding and Programming</option><option>Robotics and Automation</option><option>Scratch Programming</option><option>MIT App Inventor</option><option>Arduino and Electronics</option><option>Python Programming</option><option>HTML, CSS and JavaScript</option><option>Web and App Development</option><option>Digital Skills and Productivity Training</option><option>AI and Technology Workshops</option></select></label>
+      <label class="field">Learning mode<select data-admin-learning-mode><option value="">All modes</option><option value="Physical">Physical</option><option value="Online">Online</option></select></label>
+      <label class="field">Application status<select data-admin-filter><option value="">All statuses</option><option value="Pending">Pending</option><option value="Contacted">Contacted</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option></select></label>
+      <div class="admin-filter-actions">
+        <button class="button button-navy" type="submit">Apply filters</button>
+        <button class="button button-outline-dark" type="button" data-admin-reset>Clear filters</button>
+        <button class="button button-outline-dark" type="button" data-admin-refresh>Refresh list</button>
+        <button class="button button-gold" type="button" data-admin-export>Export CSV</button>
+      </div>
+    </form>
     <div class="form-feedback" data-admin-feedback role="status" aria-live="polite"></div>
-    <div class="table-wrap"><table class="registration-table"><caption class="visually-hidden">Student registration enquiries</caption><thead><tr><th>Reference / received</th><th>Student</th><th>Programme</th><th>Parent / guardian</th><th>Learning</th><th>Status</th></tr></thead><tbody data-admin-registrations><tr><td colspan="6">Sign in to load registrations.</td></tr></tbody></table></div>
+    <div class="table-wrap"><table class="registration-table"><caption class="visually-hidden">Student registration enquiries</caption><thead><tr><th>Reference / received</th><th>Student</th><th>Programme</th><th>Parent / guardian</th><th>Learning</th><th>Additional information</th><th>Status</th><th>Actions</th></tr></thead><tbody data-admin-registrations><tr><td colspan="8">Sign in to load registrations.</td></tr></tbody></table></div>
     <div class="pagination"><button class="button button-outline-dark" type="button" data-admin-previous disabled>Previous</button><span data-admin-page>Page 1</span><button class="button button-outline-dark" type="button" data-admin-next disabled>Next</button></div>
   </section>
   <p class="admin-loading" data-admin-loading role="status">Checking administrator access...</p>

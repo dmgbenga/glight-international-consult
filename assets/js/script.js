@@ -10,7 +10,6 @@ const navigation = [
 
 const learningLinks = [
   { label: 'Coding & robotics', href: 'coding-robotics.html' },
-  { label: 'STEM programmes', href: 'stem-programmes.html' },
   { label: 'Training & workshops', href: 'training-workshops.html' }
 ];
 
@@ -101,7 +100,7 @@ function renderLayout() {
           </div>
           <div><h2 class="footer-heading">Explore</h2><ul class="footer-links">
             <li><a href="about.html">About</a></li><li><a href="coding-robotics.html">Coding &amp; robotics</a></li>
-            <li><a href="stem-programmes.html">STEM programmes</a></li><li><a href="school-partnerships.html">School partnerships</a></li>
+            <li><a href="school-partnerships.html">School partnerships</a></li>
             <li><a href="it-solutions.html">IT solutions</a></li><li><a href="training-workshops.html">Training &amp; workshops</a></li>
           </ul></div>
           <div><h2 class="footer-heading">Get started</h2><ul class="footer-links">
@@ -323,17 +322,22 @@ function setupRegistrationForm() {
 
   const feedback = document.querySelector('[data-registration-feedback]');
   form.addEventListener('input', (event) => {
-    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) {
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement ||
+        event.target instanceof HTMLTextAreaElement) {
       event.target.setCustomValidity('');
     }
     if (feedback && feedback.dataset.state !== 'success') showFeedback(feedback, '');
   });
 
+  let submitting = false;
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (submitting) return;
     if (!form.reportValidity()) return;
 
     const submit = form.querySelector('[type="submit"]');
+    const submitLabel = form.querySelector('[data-submit-label]');
+    const submitSpinner = form.querySelector('[data-submit-spinner]');
     const payload = {
       parentName: getField(form, 'parentName').value.trim(),
       parentEmail: getField(form, 'parentEmail').value.trim(),
@@ -341,13 +345,18 @@ function setupRegistrationForm() {
       studentName: getField(form, 'studentName').value.trim(),
       age: Number(getField(form, 'age').value),
       className: getField(form, 'className').value.trim(),
+      additionalInformation: getField(form, 'additionalInformation').value.trim(),
       programme: getField(form, 'programme').value,
       learningMode: getField(form, 'learningMode').value,
       guardianConsent: getField(form, 'guardianConsent').checked,
       website: getField(form, 'website').value
     };
 
+    submitting = true;
     submit.disabled = true;
+    submit.setAttribute('aria-busy', 'true');
+    submitLabel.textContent = 'Submitting...';
+    submitSpinner.hidden = false;
     showFeedback(feedback, 'Submitting registration...');
     try {
       const response = await fetch('/api/register', {
@@ -387,12 +396,32 @@ function setupRegistrationForm() {
       detail.textContent = 'Keep this reference for your records:';
       const reference = document.createElement('code');
       reference.textContent = result.reference;
-      confirmation.append(heading, detail, reference);
+      const emailNotice = document.createElement('span');
+      if (result.emailStatus === 'sent') {
+        emailNotice.textContent = `A confirmation email was sent to ${payload.parentEmail}.`;
+      } else if (result.emailStatus === 'not_configured') {
+        emailNotice.textContent = 'Your registration was saved, but email notifications are not configured yet. Keep your reference and contact Glight if you need help.';
+      } else {
+        emailNotice.textContent = 'Your registration was saved, but email delivery could not be confirmed. Keep your reference and please do not submit it again.';
+      }
+      const sheetNotice = document.createElement('span');
+      if (result.sheetStatus === 'appended') {
+        sheetNotice.textContent = 'Your registration details were also added to Glight’s tracking sheet.';
+      } else if (result.sheetStatus === 'not_configured') {
+        sheetNotice.textContent = 'Your registration was saved, but its spreadsheet copy is not configured yet. Keep your reference and please do not submit it again.';
+      } else {
+        sheetNotice.textContent = 'Your registration was saved, but the spreadsheet copy could not be confirmed. Keep your reference and please do not submit it again.';
+      }
+      confirmation.append(heading, detail, reference, emailNotice, sheetNotice);
       feedback.append(confirmation);
     } catch (error) {
       showFeedback(feedback, 'Registration could not be submitted right now. Please try again later or contact Glight by phone or email.');
     } finally {
+      submitting = false;
       submit.disabled = false;
+      submit.removeAttribute('aria-busy');
+      submitLabel.textContent = 'Submit registration';
+      submitSpinner.hidden = true;
     }
   });
 }
@@ -407,10 +436,19 @@ function setupAdminDashboard() {
   const tableBody = document.querySelector('[data-admin-registrations]');
   const feedback = document.querySelector('[data-admin-feedback]');
   const loginFeedback = document.querySelector('[data-admin-login-feedback]');
+  const filterForm = document.querySelector('[data-admin-filter-form]');
   const filter = document.querySelector('[data-admin-filter]');
+  const searchInput = document.querySelector('[data-admin-search]');
+  const programmeFilter = document.querySelector('[data-admin-programme]');
+  const learningModeFilter = document.querySelector('[data-admin-learning-mode]');
   const previous = document.querySelector('[data-admin-previous]');
   const next = document.querySelector('[data-admin-next]');
   const pageLabel = document.querySelector('[data-admin-page]');
+  const totalCount = document.querySelector('[data-admin-total]');
+  const pendingCount = document.querySelector('[data-admin-pending]');
+  const refreshButton = document.querySelector('[data-admin-refresh]');
+  const resetButton = document.querySelector('[data-admin-reset]');
+  const exportButton = document.querySelector('[data-admin-export]');
   let offset = 0;
   const pageSize = 25;
 
@@ -457,8 +495,8 @@ function setupAdminDashboard() {
     if (registrations.length === 0) {
       const row = document.createElement('tr');
       const cell = document.createElement('td');
-      cell.colSpan = 6;
-      cell.textContent = 'No registrations match this filter.';
+      cell.colSpan = 8;
+      cell.textContent = 'No registrations match these filters.';
       row.append(cell);
       tableBody.append(row);
       return;
@@ -479,7 +517,7 @@ function setupAdminDashboard() {
       const studentName = document.createElement('strong');
       studentName.textContent = record.student_name;
       const studentDetails = document.createElement('small');
-      studentDetails.textContent = `Age ${record.age} · ${record.class_name}`;
+      studentDetails.textContent = `Age ${record.student_age} · ${record.student_class}`;
       student.append(studentName, studentDetails);
       row.append(student);
 
@@ -491,26 +529,42 @@ function setupAdminDashboard() {
       phoneLink.className = 'admin-detail-link';
       parentCell.append(phoneLink);
       const consent = document.createElement('small');
-      consent.textContent = record.guardian_consent
+      consent.textContent = record.parental_consent
         ? `Guardian consent recorded${record.guardian_consent_at ? ` · ${new Date(record.guardian_consent_at).toLocaleDateString()}` : ''}`
         : 'Guardian consent not recorded';
       parentCell.append(consent);
       const learningCell = document.createElement('td');
-      learningCell.textContent = record.learning_mode === 'physical' ? 'Physical · Abuja' : 'Online';
+      learningCell.textContent = record.learning_mode === 'Physical' ? 'Physical · Abuja' : 'Online';
       row.append(learningCell);
+
+      const additionalCell = document.createElement('td');
+      const additional = document.createElement('small');
+      additional.className = 'admin-additional-info';
+      additional.textContent = record.additional_information || '—';
+      additionalCell.append(additional);
+      row.append(additionalCell);
+
       const statusCell = document.createElement('td');
       const status = document.createElement('select');
       status.className = 'status-select';
       status.setAttribute('aria-label', `Registration status for ${record.reference}`);
-      [['pending', 'Pending'], ['contacted', 'Contacted'], ['registered', 'Registered'], ['closed', 'Closed']].forEach(([value, label]) => {
+      [['Pending', 'Pending'], ['Contacted', 'Contacted'], ['Approved', 'Approved'], ['Rejected', 'Rejected']].forEach(([value, label]) => {
         const option = document.createElement('option');
         option.value = value;
         option.textContent = label;
-        option.selected = record.status === value;
+        option.selected = record.application_status === value;
         status.append(option);
       });
+      if (!['Pending', 'Contacted', 'Approved', 'Rejected'].includes(record.application_status)) {
+        const legacyStatus = document.createElement('option');
+        legacyStatus.value = record.application_status;
+        legacyStatus.textContent = `${record.application_status} (legacy)`;
+        legacyStatus.selected = true;
+        legacyStatus.disabled = true;
+        status.append(legacyStatus);
+      }
       status.addEventListener('change', async () => {
-        const oldValue = record.status;
+        const oldValue = record.application_status;
         status.disabled = true;
         try {
           await request(`/api/admin/registrations?id=${encodeURIComponent(record.id)}`, {
@@ -518,8 +572,13 @@ function setupAdminDashboard() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: status.value })
           });
-          record.status = status.value;
-          showFeedback(feedback, `Registration ${record.reference} updated.`, 'success');
+          record.application_status = status.value;
+          const refreshError = await loadRegistrations();
+          if (refreshError) {
+            showFeedback(feedback, `Registration ${record.reference} was updated, but the list could not refresh: ${refreshError.message}`);
+          } else {
+            showFeedback(feedback, `Registration ${record.reference} updated.`, 'success');
+          }
         } catch (error) {
           status.value = oldValue;
           showFeedback(feedback, error.message);
@@ -529,28 +588,111 @@ function setupAdminDashboard() {
       });
       statusCell.append(status);
       row.append(statusCell);
+
+      const actions = document.createElement('td');
+      const deleteButton = document.createElement('button');
+      deleteButton.type = 'button';
+      deleteButton.className = 'admin-delete-button';
+      deleteButton.textContent = 'Delete';
+      deleteButton.setAttribute('aria-label', `Delete registration ${record.reference}`);
+      deleteButton.addEventListener('click', async () => {
+        if (!window.confirm(`Permanently delete registration ${record.reference}? This cannot be undone.`)) return;
+        deleteButton.disabled = true;
+        try {
+          await request(`/api/admin/registrations?id=${encodeURIComponent(record.id)}`, { method: 'DELETE' });
+          if (offset > 0 && registrations.length === 1) offset = Math.max(0, offset - pageSize);
+          const refreshError = await loadRegistrations();
+          if (refreshError) {
+            showFeedback(feedback, `Registration ${record.reference} was deleted, but the list could not refresh: ${refreshError.message}`);
+          } else {
+            showFeedback(feedback, `Registration ${record.reference} deleted.`, 'success');
+          }
+        } catch (error) {
+          showFeedback(feedback, error.message);
+        } finally {
+          deleteButton.disabled = false;
+        }
+      });
+      actions.append(deleteButton);
+      row.append(actions);
       tableBody.append(row);
     });
   }
 
-  async function loadRegistrations() {
-    const query = new URLSearchParams({ limit: String(pageSize), offset: String(offset) });
+  function getActiveFilters() {
+    const query = new URLSearchParams();
+    if (searchInput.value.trim()) query.set('search', searchInput.value.trim());
+    if (programmeFilter.value) query.set('programme', programmeFilter.value);
+    if (learningModeFilter.value) query.set('learningMode', learningModeFilter.value);
     if (filter.value) query.set('status', filter.value);
+    return query;
+  }
+
+  async function loadRegistrations() {
+    const query = getActiveFilters();
+    query.set('limit', String(pageSize));
+    query.set('offset', String(offset));
     showFeedback(feedback, 'Loading registrations...');
-    document.querySelector('[data-admin-refresh]').disabled = true;
+    refreshButton.disabled = true;
     try {
       const result = await request(`/api/admin/registrations?${query.toString()}`);
+      if (!Array.isArray(result.registrations) || !result.summary) {
+        throw new Error('The registration service returned incomplete dashboard data.');
+      }
       renderRows(result.registrations);
       const totalPages = Math.max(1, Math.ceil(result.total / pageSize));
       pageLabel.textContent = `Page ${Math.floor(offset / pageSize) + 1} of ${totalPages}`;
+      totalCount.textContent = String(result.summary.totalRegistrations);
+      pendingCount.textContent = String(result.summary.pendingApplications);
       previous.disabled = offset === 0;
       next.disabled = offset + pageSize >= result.total;
       showFeedback(feedback, `${result.total} registration${result.total === 1 ? '' : 's'} found.`, 'success');
+      return null;
     } catch (error) {
       renderRows([]);
       showFeedback(feedback, error.message);
+      return error;
     } finally {
-      document.querySelector('[data-admin-refresh]').disabled = false;
+      refreshButton.disabled = false;
+    }
+  }
+
+  async function exportCsv() {
+    const query = getActiveFilters();
+    query.set('format', 'csv');
+    exportButton.disabled = true;
+    showFeedback(feedback, 'Preparing registration export...');
+    try {
+      const response = await fetch(`/api/admin/registrations?${query.toString()}`, {
+        cache: 'no-store',
+        credentials: 'same-origin'
+      });
+      if (!response.ok) {
+        let result;
+        try {
+          result = await response.json();
+        } catch (error) {
+          throw new Error('The export service returned an invalid response.');
+        }
+        throw new Error(result.error || 'The export could not be completed.');
+      }
+      const blob = await response.blob();
+      if (!blob.type.toLowerCase().includes('text/csv')) {
+        throw new Error('The export service returned an unexpected file type.');
+      }
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `glight-registrations-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
+      showFeedback(feedback, 'The CSV export has been downloaded.', 'success');
+    } catch (error) {
+      showFeedback(feedback, error.message);
+    } finally {
+      exportButton.disabled = false;
     }
   }
 
@@ -614,11 +756,18 @@ function setupAdminDashboard() {
     }
   });
 
-  document.querySelector('[data-admin-refresh]').addEventListener('click', loadRegistrations);
-  filter.addEventListener('change', () => {
+  filterForm.addEventListener('submit', (event) => {
+    event.preventDefault();
     offset = 0;
     loadRegistrations();
   });
+  resetButton.addEventListener('click', () => {
+    filterForm.reset();
+    offset = 0;
+    loadRegistrations();
+  });
+  refreshButton.addEventListener('click', loadRegistrations);
+  exportButton.addEventListener('click', exportCsv);
   previous.addEventListener('click', () => {
     offset = Math.max(0, offset - pageSize);
     loadRegistrations();
